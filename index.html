@@ -443,8 +443,8 @@
 
     
     // 🌟 LINK WEB APP CENTRALIZADO: Substitua pela URL gerada no deploy do seu Apps Script
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyGFR5tZicDgcl-dTslCI5vfdtYY6EMpOuQ9eGfcbCuHM-RsVLVNWrGbRTLdMWImM5aPA/exec"; //Perfil 1
- //   const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxhN3DYLc17sloBp5EXFzEdGFe0lGfV_Gz2bpiRH5R2OkBLL1hr8aYhIx5Jus-fnSyt/exec"; //Perfil 2
+   const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyGFR5tZicDgcl-dTslCI5vfdtYY6EMpOuQ9eGfcbCuHM-RsVLVNWrGbRTLdMWImM5aPA/exec"; //Perfil 1
+  // const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxhN3DYLc17sloBp5EXFzEdGFe0lGfV_Gz2bpiRH5R2OkBLL1hr8aYhIx5Jus-fnSyt/exec"; //Perfil 2
 
 
     function carregarDadosGlobais() {
@@ -651,6 +651,7 @@
     // 🚀 ENGINE ANALÍTICA REVISADA: Concatenação 100% fechada, sem cortes e livre de erros de sintaxe
     // 🚀 ENGINE ANALÍTICA SURGICAL: Concatenação pura estável, livre de erros de aspas/crases
     // 🚀 ENGINE ANALÍTICA COMPLETA: Inclui fatiamento de Dispatch % e o Monitor de 10M de Células blindado
+    // 🚀 ENGINE ANALÍTICA REVISADA: Estrutura tripartite completa (Backlog, Dia e Estrutura) integrada
     function renderizarCards(listaUfs) {
       const grid = document.getElementById("grid-estados-uf");
       grid.innerHTML = "";
@@ -669,8 +670,8 @@
         const pParciaisDia   = totalDia > 0 ? Math.round((da.dia.parciais.length / totalDia) * 100) : 0;
         const pPendentesDia  = totalDia > 0 ? Math.round((da.dia.pendentes.length / totalDia) * 100) : 0;
 
-        const qDispatchedDia = [...da.dia.concluidos, ...da.dia.parciais, ...da.dia.pendentes].filter(c => c.dispatch && c.dispatch !== "Aguardando" && c.dispatch.toString().trim() !== "").length;
-        const pDispatchedDia = totalDia > 0 ? Math.round((qDispatchedDia / totalDia) * 100) : 0;
+        const qPresosDia = [...da.dia.concluidos, ...da.dia.parciais, ...da.dia.pendentes].filter(c => !c.dispatch || c.dispatch === "Aguardando" || c.dispatch.toString().trim() === "").length;
+        const pDispatchedDia = totalDia > 0 ? Math.round(((totalDia - qPresosDia) / totalDia) * 100) : 0;
 
         // =========================================================================
         // 📊 EQUAÇÕES MATEMÁTICAS EM RAM: OPERAÇÃO DO BACKLOG
@@ -679,8 +680,8 @@
         const pParciaisBacklog   = totalBacklog > 0 ? Math.round((da.backlog.parciais.length / totalBacklog) * 100) : 0;
         const pPendentesBacklog  = totalBacklog > 0 ? Math.round((da.backlog.pendentes.length / totalBacklog) * 100) : 0;
 
-        const qDispatchedBacklog = [...da.backlog.concluidos, ...da.backlog.parciais, ...da.backlog.pendentes].filter(c => c.dispatch && c.dispatch !== "Aguardando" && c.dispatch.toString().trim() !== "").length;
-        const pDispatchedBacklog = totalBacklog > 0 ? Math.round((qDispatchedBacklog / totalBacklog) * 100) : 0;
+        const qPresosBacklog = [...da.backlog.concluidos, ...da.backlog.parciais, ...da.backlog.pendentes].filter(c => !c.dispatch || c.dispatch === "Aguardando" || c.dispatch.toString().trim() === "").length;
+        const pDispatchedBacklog = totalBacklog > 0 ? Math.round(((totalBacklog - qPresosBacklog) / totalBacklog) * 100) : 0;
 
         // =========================================================================
         // 🏗️ MONITOR DE CAPACIDADE CELULAR ISOLADO (TETO 10 MILHÕES)
@@ -690,17 +691,16 @@
         
         let corBarra = 'var(--status-green)';
         if (pConsumo >= 90) corBarra = 'var(--status-red)';
-        else if (pConsumo >= 70) corBarra = '#F57C00'; // Laranja tático
+        else if (pConsumo >= 70) corBarra = '#F57C00'; 
         
         let textoCelulas = totalCelulas >= 1000000 ? (totalCelulas / 1000000).toFixed(1) + 'M' : (totalCelulas / 1000).toFixed(0) + 'K';
         
         const estiloCorBarra = 'width: ' + pConsumo + '%; background-color: ' + corBarra + ';';
         const estiloTextoPreco = 'font-weight:700; color:' + corBarra + ';';
 
-        // Geração da string HTML isolada para embutir na estrutura física do card
         let htmlBarraCelulas = '<div class="cells-progress-container">' +
                                  '<div class="cells-label-row">' +
-                                   '<span>Uso Células (ID_CONF):</span>' +
+                                   '<span>Consumo (Painel):</span>' +
                                    '<span style="' + estiloTextoPreco + '">' + textoCelulas + ' (' + pConsumo + '%)</span>' +
                                  '</div>' +
                                  '<div class="cells-bg-bar">' +
@@ -709,8 +709,11 @@
                                '</div>';
 
         // =========================================================================
-        // 📥 CONCATENAÇÃO UNIFICADA E PROTEGIDA CONTRA ESCAPES
+        // 📥 CONCATENAÇÃO STRÍNGEA COMPLETA E UNIFICADA
         // =========================================================================
+        const corContadorBacklog = qPresosBacklog > 0 ? 'color: var(--status-red); font-weight: 800;' : 'color: var(--text-muted);';
+        const corContadorDia = qPresosDia > 0 ? 'color: var(--status-red); font-weight: 800;' : 'color: var(--text-muted);';
+
         let cardHtml = '<div class="uf-card">' +
             '<div class="uf-header">' +
               '<div class="uf-title">' + uf.nome_estado + ' (' + uf.sigla + ')</div>' +
@@ -719,32 +722,39 @@
             
             '<a href="https://google.com' + uf.id_planilha_prod + '" target="_blank" class="sheet-link">🔗 Planilha Produção</a>' +
             
+            /* 📅 QUADRANTE 1: ROMANEIOS / BACKLOG */
             '<div class="diagnostic-box" style="margin-top:0.5rem; padding-top:0.5rem;">' +
               '<div style="font-weight:700; font-size:0.85rem; margin-bottom:0.4rem; color:var(--purple-neon);">📅 ROMANEIOS / BACKLOG</div>' +
-              '<div class="diagnostic-item"><span>Parciais:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogistica(' + index + ', \'backlog\', \'parciais\'); return false;" style="color:#F57C00;">' + pParciaisBacklog + '% (' + da.backlog.parciais.length + ')</a></div>' +
-              '<div class="diagnostic-item"><span>Pendentes:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogistica(' + index + ', \'backlog\', \'pendentes\'); return false;" style="color:var(--status-red);">' + pPendentesBacklog + '% (' + da.backlog.pendentes.length + ')</a></div>' +
+              '<div class="diagnostic-item"><span>Parciais:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogistica(\'' + uf.sigla + '\', \'backlog\', \'parciais\'); return false;" style="color:#F57C00;">' + pParciaisBacklog + '% (' + da.backlog.parciais.length + ')</a></div>' +
+              '<div class="diagnostic-item"><span>Pendentes:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogistica(\'' + uf.sigla + '\', \'backlog\', \'pendentes\'); return false;" style="color:var(--status-red);">' + pPendentesBacklog + '% (' + da.backlog.pendentes.length + ')</a></div>' +
               '<div class="diagnostic-item" style="border-top: 1px dashed rgba(0,0,0,0.03); margin-top: 0.3rem; padding-top: 0.3rem;">' +
-                '<span>Dispatched:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogisticaEspecial(' + index + ', \'backlog\'); return false;" style="color:#00C853; font-weight:700;">' + pDispatchedBacklog + '% (' + qDispatchedBacklog + ')</a>' +
+                '<span>Dispatched:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogisticaEspecial(\'' + uf.sigla + '\', \'backlog\'); return false;" style="color:#00C853; font-weight:700;">' + 
+                  pDispatchedBacklog + '% <span style="color:var(--text-muted); font-weight:400; margin:0 0.2rem;">/</span> <span style="' + corContadorBacklog + '">' + qPresosBacklog + '</span>' +
+                '</a>' +
               '</div>' +
             '</div>' +
 
+            /* ☀️ QUADRANTE 2: ROMANEIOS / DIA */
             '<div class="diagnostic-box" style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid rgba(0,0,0,0.03);">' +
               '<div style="font-weight:700; font-size:0.85rem; margin-bottom:0.4rem; color:var(--purple-neon);">☀️ ROMANEIOS / DIA</div>' +
-              '<div class="diagnostic-item"><span>Concluídos:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogistica(' + index + ', \'dia\', \'concluidos\'); return false;">' + pConcluidosDia + '% (' + da.dia.concluidos.length + ')</a></div>' +
-              '<div class="diagnostic-item"><span>Parciais:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogistica(' + index + ', \'dia\', \'parciais\'); return false;" style="color:#F57C00;">' + pParciaisDia + '% (' + da.dia.parciais.length + ')</a></div>' +
-              '<div class="diagnostic-item"><span>Pendentes:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogistica(' + index + ', \'dia\', \'pendentes\'); return false;" style="color:var(--status-red);">' + pPendentesDia + '% (' + da.dia.pendentes.length + ')</a></div>' +
+              '<div class="diagnostic-item"><span>Concluídos:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogistica(\'' + uf.sigla + '\', \'dia\', \'concluidos\'); return false;">' + pConcluidosDia + '% (' + da.dia.concluidos.length + ')</a></div>' +
+              '<div class="diagnostic-item"><span>Parciais:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogistica(\'' + uf.sigla + '\', \'dia\', \'parciais\'); return false;" style="color:#F57C00;">' + pParciaisDia + '% (' + da.dia.parciais.length + ')</a></div>' +
+              '<div class="diagnostic-item"><span>Pendentes:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogistica(\'' + uf.sigla + '\', \'dia\', \'pendentes\'); return false;" style="color:var(--status-red);">' + pPendentesDia + '% (' + da.dia.pendentes.length + ')</a></div>' +
               '<div class="diagnostic-item" style="border-top: 1px dashed rgba(0,0,0,0.03); margin-top: 0.3rem; padding-top: 0.3rem;">' +
-                '<span>Dispatched:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogisticaEspecial(' + index + ', \'dia\'); return false;" style="color:#00C853; font-weight:700;">' + pDispatchedDia + '% (' + qDispatchedDia + ')</a>' +
+                '<span>Dispatched:</span><a href="#" class="sheet-link" onclick="abrirJanelaLogisticaEspecial(\'' + uf.sigla + '\', \'dia\'); return false;" style="color:#00C853; font-weight:700;">' + 
+                  pDispatchedDia + '% <span style="color:var(--text-muted); font-weight:400; margin:0 0.2rem;">/</span> <span style="' + corContadorDia + '">' + qPresosDia + '</span>' +
+                '</a>' +
               '</div>' +
             '</div>' +
 
+            /* 🏗️ QUADRANTE 3: ESTRUTURA FÍSICA */
             '<div class="diagnostic-box" style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid rgba(0,0,0,0.03);">' +
               '<div style="font-weight:700; font-size:0.85rem; margin-bottom:0.4rem; color:var(--text-muted);">🏗️ ESTRUTURA</div>' +
               '<div class="diagnostic-item"><span>Abas Ativas:</span><span>' + uf.abas_existentes + '</span></div>' +
               '<div class="diagnostic-item"><span>Abas Órfãs Locais:</span><span style="' + (uf.orfas > 0 ? 'color: #D32F2F; font-weight: 700;' : '') + '">' + uf.orfas + '</span></div>' +
               '<div class="diagnostic-item"><span>Faltantes Master:</span><span style="' + (uf.faltantes > 0 ? 'color: #E65100; font-weight: 700;' : '') + '">' + uf.faltantes + '</span></div>' +
               
-              /* 📥 INJEÇÃO DA VARIÁVEL CELL-PROGRESS TOTALMENTE PROTEGIDA */
+              /* BARRA DE CAPACIDADE CELULAR LIMIT 10M */
               htmlBarraCelulas +
 
               '<div class="diagnostic-item" style="border-top: 1px dashed #E5E5EA; margin-top:0.6rem; padding-top:0.4rem; font-size:0.75rem;">' +
@@ -762,21 +772,21 @@
 
 
 
-
-
-
-
     // 🌟 CONTROLADOR REATIVO EXPANDIDO: Abre a lista forense com as 6 colunas logísticas em RAM
     // 🌟 INTERFACE EXPANDIDA: Monta o grid forense com as 6 colunas logísticas em RAM
     // 🌟 INTERFACE TOTALMENTE BLINDADA: Monta a grade analítica de 6 colunas livre de quebras por aspas
-    function abrirJanelaLogistica(ufIndex, tipoPeriodo, categoriaStatus) {
-      const ufAlvo = cacheDadosEcosistema[ufIndex];
+    // 🌟 INTERFACE EXPANDIDA BLINDADA: Busca por Sigla UF para erradicar o bug pós-filtro regional
+    function abrirJanelaLogistica(ufSigla, tipoPeriodo, categoriaStatus) {
+      // 🎯 CONVERSÃO SEGURO: Força o parâmetro recebido a virar String pura antes de rodar o toUpperCase()
+      const siglaTextoStr = String(ufSigla).trim().toUpperCase();
+      
+      const ufAlvo = cacheDadosEcosistema.find(uf => uf.sigla.toUpperCase() === siglaTextoStr);
       if (!ufAlvo) return;
-
+    
       const listaCargas = ufAlvo.detalhes_analiticos[tipoPeriodo][categoriaStatus] || [];
       document.getElementById("modal-logistica-titulo").innerText = `${ufAlvo.nome_estado} (${ufAlvo.sigla}) - ${tipoPeriodo.toUpperCase()} [${categoriaStatus.toUpperCase()}]`;
       const caixaConteudo = document.getElementById("modal-logistica-conteudo");
-
+    
       if (listaCargas.length === 0) {
         caixaConteudo.innerHTML = `<div style="text-align:center; padding-top:4rem; color:var(--text-muted); font-weight:500;">Nenhum romaneio ativo mapeado nesta categoria.</div>`;
       } else {
@@ -800,19 +810,20 @@
           if (textoCompleto.length > 40) {
             textoOcorrencia = textoCompleto.substring(0, 37) + "...";
           }
-
-          // Escapa aspas pesadas para o atributo 'title' nativo não sofrer quebras
+    
+          // Garante o escape correto de aspas para não quebrar o HTML interno
           let textoTituloEscapado = textoCompleto.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-
+          let textoCurtoEscapado = textoOcorrencia.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    
           tabelaHtml += `<tr style="border-bottom:1px solid rgba(0,0,0,0.04); font-weight:500; vertical-align:top;">
                            <td style="padding:0.6rem 0.4rem; font-weight:700; font-family:monospace;">${c.romaneio || "Sem ID"}</td>
                            <td style="padding:0.6rem 0.4rem; color:#333;">${c.transp || "Não Informada"}</td>
                            <td style="padding:0.6rem 0.4rem; text-align:center; font-weight:600; color:var(--purple-neon);">${c.pedidos || 0}</td>
                            
-                           <!-- 🎯 CÉLULA DESACOPLADA: Passamos o index em RAM para a função gerenciar o clique sem injeção inline perigosa! -->
+                           <!-- 🎯 CÉLULA DESACOPLADA REVISADA: Repassa o objeto contextual isolado por linha -->
                            <td style="padding:0.6rem 0.4rem; max-width:320px; color:var(--text-muted); font-size:0.78rem; cursor:pointer;" 
                                title="${textoTituloEscapado}" 
-                               data-short="${textoOcorrencia.replace(/'/g, "&#39;")}"
+                               data-short="${textoCurtoEscapado}"
                                data-full="${textoTituloEscapado}"
                                data-open="0"
                                onclick="alternarTextoOcorrencia(this)">
@@ -829,6 +840,7 @@
       }
       document.getElementById("modal-logistica-detalhe").style.display = "flex";
     }
+
 
     // 🎯 NOVA ENGINE DE EXPANSÃO SEGURA: Gerencia o abre/fecha lendo os metadados da célula de forma síncrona
     function alternarTextoOcorrencia(elementoCelular) {
@@ -849,9 +861,13 @@
 
 
 
-    // 🎯 CONTROLADOR ATUALIZADO: Filtra e lista APENAS as cargas que NÃO foram despachadas (Presas na Doca)
-    function abrirJanelaLogisticaEspecial(ufIndex, tipoPeriodo) {
-      const ufAlvo = cacheDadosEcosistema[ufIndex];
+    // 🎯 CONTROLADOR ATUALIZADO: Filtra e lista APENAS as cargas que NÃO foram despachadas (Busca via Sigla UF)
+    function abrirJanelaLogisticaEspecial(ufSigla, tipoPeriodo) {
+      // 🎯 CONVERSÃO SEGURO: Força o parâmetro a virar String pura antes de rodar o find
+      const siglaTextoStr = String(ufSigla).trim().toUpperCase();
+
+      // Localiza o estado correto de forma unívoca na array global RAM, matando o bug pós-filtro
+      const ufAlvo = cacheDadosEcosistema.find(uf => uf.sigla.toUpperCase() === siglaTextoStr);
       if (!ufAlvo) return;
 
       const da = ufAlvo.detalhes_analiticos || { dia: { concluidos: [], parciais: [], pendentes: [] }, backlog: { concluidos: [], parciais: [], pendentes: [] } };
@@ -859,7 +875,7 @@
       // Consolida todos os baldes daquela sessão (Dia ou Backlog)
       const todosPeriodo = [...da[tipoPeriodo].concluidos, ...da[tipoPeriodo].parciais, ...da[tipoPeriodo].pendentes];
       
-      // 🎯 INVERSÃO DA EQUAÇÃO EM RAM: Filtra estritamente as cargas onde o dispatch está vazio, nulo ou "Aguardando"
+      // Filtra estritamente as cargas onde o dispatch está vazio, nulo ou "Aguardando"
       const listaPresos = todosPeriodo.filter(c => !c.dispatch || c.dispatch === "Aguardando" || c.dispatch.toString().trim() === "");
 
       // Altera dinamicamente o título do modal para alertar a gestão
@@ -896,6 +912,7 @@
       }
       document.getElementById("modal-logistica-detalhe").style.display = "flex";
     }
+
 
 
 // =========================================================================
