@@ -412,9 +412,11 @@
     <div class="terminal-box" id="modal-logistica-conteudo" style="background: #F4F4F6; color: var(--text-main); height: 300px; border: 1px solid rgba(0,0,0,0.05); padding: 1.25rem; overflow-y: auto;">
       <!-- Os romaneios entrarão aqui em tempo real -->
     </div>
-    <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
-      <button class="btn-global" onclick="document.getElementById('modal-logistica-detalhe').style.display='none'">FECHAR LISTA</button>
-    </div>
+      <!-- 🎯 SUBSTITUA APENAS A DIV DE BOTÕES NO RODAPÉ DO MODAL DE LOGÍSTICA DE DETALHE -->
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+        <button class="btn-action-sm" onclick="exportarTabelaModalParaCSV()" style="background: var(--purple-dim); color: var(--purple-neon); padding: 0.75rem 1.5rem; font-size: 0.85rem;">📥 Exportar Tabela (.CSV)</button>
+        <button class="btn-global" onclick="document.getElementById('modal-logistica-detalhe').style.display='none'">FECHAR LISTA</button>
+      </div>
   </div>
 </div>
 
@@ -1089,6 +1091,66 @@ function buscarUfPorTexto() {
       document.getElementById("kpi-total-resgatadas").innerText = somaOrfas;
       document.getElementById("kpi-total-faltantes").innerText = somaFaltantes;
       document.getElementById("kpi-total-criticos").innerText = somaCriticos;
+    }
+
+    // =========================================================================
+    // 📊 ENGINE UNIVERSAL DE EXPORTAÇÃO PARA CSV (EXCEL WHITE MODE PRO)
+    // =========================================================================
+    function exportarTabelaModalParaCSV() {
+      // Localiza a tabela física gerada dinamicamente dentro do modal
+      const tabela = document.querySelector("#modal-logistica-conteudo table");
+      if (!tabela) {
+        alert("⚠️ Nenhuma tabela de dados encontrada para exportação.");
+        return;
+      }
+
+      const linhasTabela = tabela.querySelectorAll("tr");
+      let linhasCsv = [];
+
+      linhasTabela.forEach(linhaFisica => {
+        let colunasLinha = [];
+        // Captura tanto os cabeçalhos (th) quanto as células de dados (td)
+        const celulas = linhaFisica.querySelectorAll("th, td");
+        
+        celulas.forEach(celula => {
+          // Extrai o texto puro limpando espaços e quebras de linha residuais
+          let textoCelula = celula.innerText.trim();
+          
+          // Se for a célula expansiva de intercorrência, garante o texto limpo sem blocos HTML
+          if (celula.querySelector("div")) {
+            textoCelula = celula.querySelector("div").innerText.trim();
+          }
+
+          // Tratamento de segurança para Excel: escapa aspas duplas e envolve o texto
+          textoCelula = textoCelula.replace(/"/g, '""');
+          colunasLinha.push('"' + textoCelula + '"');
+        });
+
+        // Junta as colunas usando o ponto e vírgula (;), padrão oficial do Excel no Brasil
+        linhasCsv.push(colunasLinha.join(";"));
+      });
+
+      // Une as linhas com quebra de página universal e força o encoding UTF-8 (BOM) contra erros de acentuação
+      const conteudoFinalCsv = "\uFEFF" + linhasCsv.join("\n");
+      
+      // Captura o título do modal para batizar o arquivo de forma inteligente
+      let tituloModal = document.getElementById("modal-logistica-titulo").innerText.trim();
+      let nomeArquivoPronto = "SmartCargas_" + tituloModal.replace(/[^a-zA-Z0-9]/g, "_") + ".csv";
+
+      // Dispara o gatilho invisível de download nativo do navegador
+      const blobDados = new Blob([conteudoFinalCsv], { type: "text/csv;charset=utf-8;" });
+      const linkDownload = document.createElement("a");
+      
+      if (navigator.msSaveBlob) { // Suporte para navegadores legados (IE/Edge antigo)
+        navigator.msSaveBlob(blobDados, nomeArquivoPronto);
+      } else {
+        linkDownload.href = URL.createObjectURL(blobDados);
+        linkDownload.setAttribute("download", nomeArquivoPronto);
+        linkDownload.style.visibility = "hidden";
+        document.body.appendChild(linkDownload);
+        linkDownload.click();
+        document.body.removeChild(linkDownload);
+      }
     }
 
     
