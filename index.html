@@ -1096,8 +1096,10 @@ function buscarUfPorTexto() {
     // =========================================================================
     // 📊 ENGINE UNIVERSAL DE EXPORTAÇÃO PARA CSV (EXCEL WHITE MODE PRO)
     // =========================================================================
+    // =========================================================================
+    // 📊 ENGINE UNIVERSAL DE EXPORTAÇÃO PARA CSV (LEITOR METADADOS ANTI-CORTE)
+    // =========================================================================
     function exportarTabelaModalParaCSV() {
-      // Localiza a tabela física gerada dinamicamente dentro do modal
       const tabela = document.querySelector("#modal-logistica-conteudo table");
       if (!tabela) {
         alert("⚠️ Nenhuma tabela de dados encontrada para exportação.");
@@ -1109,20 +1111,19 @@ function buscarUfPorTexto() {
 
       linhasTabela.forEach(linhaFisica => {
         let colunasLinha = [];
-        // Captura tanto os cabeçalhos (th) quanto as células de dados (td)
         const celulas = linhaFisica.querySelectorAll("th, td");
         
         celulas.forEach(celula => {
-          // Extrai o texto puro limpando espaços e quebras de linha residuais
           let textoCelula = celula.innerText.trim();
           
-          // Se for a célula expansiva de intercorrência, garante o texto limpo sem blocos HTML
-          if (celula.querySelector("div")) {
-            textoCelula = celula.querySelector("div").innerText.trim();
+          // 🎯 ENGENHARIA ANTI-CORTE: Se a célula tiver o atributo 'data-full', 
+          // nós extraímos o relatório 100% completo da memória RAM, ignorando as reticências (...) da tela!
+          if (celula.hasAttribute("data-full")) {
+            textoCelula = celula.getAttribute("data-full").trim();
           }
 
-          // Tratamento de segurança para Excel: escapa aspas duplas e envolve o texto
-          textoCelula = textoCelula.replace(/"/g, '""');
+          // Tratamento de segurança para Excel: escapa aspas duplas e quebras de linha
+          textoCelula = textoCelula.replace(/"/g, '""').replace(/\n/g, " ");
           colunasLinha.push('"' + textoCelula + '"');
         });
 
@@ -1141,7 +1142,7 @@ function buscarUfPorTexto() {
       const blobDados = new Blob([conteudoFinalCsv], { type: "text/csv;charset=utf-8;" });
       const linkDownload = document.createElement("a");
       
-      if (navigator.msSaveBlob) { // Suporte para navegadores legados (IE/Edge antigo)
+      if (navigator.msSaveBlob) { 
         navigator.msSaveBlob(blobDados, nomeArquivoPronto);
       } else {
         linkDownload.href = URL.createObjectURL(blobDados);
@@ -1152,6 +1153,7 @@ function buscarUfPorTexto() {
         document.body.removeChild(linkDownload);
       }
     }
+
 
     
   </script>
