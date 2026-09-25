@@ -1348,35 +1348,49 @@ function buscarUfPorTexto() {
     }
 
         // 🎯 RELATÓRIO EXECUTIVO GLOBAL: Consolida o ranking completo de gargalos do Backlog nacional
+    // 🎯 RELATÓRIO EXECUTIVO GLOBAL: Ranking purificado baseado estritamente em Backlog Parciais e Pendentes
     function abrirModalRankingTranspBacklog() {
       if (!cacheDadosEcosistema || cacheDadosEcosistema.length === 0) return;
 
       let consolidadoRanking = {};
-      let totalGeralPresos = 0;
+      let totalGeralNoGargalo = 0;
+      
+      // Set de segurança para garantir a unicidade absoluta no mapeamento do modal
+      let romaneiosProcessadosModalSet = new Set();
 
-      // Fase 1: Agrupa dados destrinchados por Transportadora + UF
+      // Fase 1: Agrupa dados destrinchados por Transportadora + UF baseado estritamente no gargalo real
       cacheDadosEcosistema.forEach(uf => {
         const da = uf.detalhes_analiticos || {};
-        const backlog = da.backlog || { concluidos: [], parciais: [], pendentes: [] };
-        const presos = [...backlog.concluidos, ...backlog.parciais, ...backlog.pendentes].filter(c => !c.dispatch || c.dispatch === "Aguardando" || c.dispatch.toString().trim() === "");
+        const backlogUf = da.backlog || { concluidos: [], parciais: [], pendentes: [] };
+        
+        // Regra de Ouro: Une estritamente os baldes de atraso real (Parciais + Pendentes)
+        const frotasAtrasadas = [...backlogUf.parciais, ...backlogUf.pendentes];
 
-        presos.forEach(c => {
-          let t = c.transp || "Não Informada";
-          totalGeralPresos++;
+        frotasAtrasadas.forEach(c => {
+          let idRom = c.romaneio ? c.romaneio.toString().trim().toUpperCase() : "";
+          if (!idRom) return;
 
-          if (!consolidadoRanking[t]) {
-            consolidadoRanking[t] = { total: 0, detalheUfs: {} };
+          // Processa apenas frotas exclusivas para dar match 100% com o KPI do topo (Ex: Alpha com 74)
+          if (!romaneiosProcessadosModalSet.has(idRom)) {
+            romaneiosProcessadosModalSet.add(idRom);
+            
+            let t = c.transp || "Não Informada";
+            totalGeralNoGargalo++;
+
+            if (!consolidadoRanking[t]) {
+              consolidadoRanking[t] = { total: 0, detalheUfs: {} };
+            }
+            consolidadoRanking[t].total++;
+            consolidadoRanking[t].detalheUfs[uf.sigla] = (consolidadoRanking[t].detalheUfs[uf.sigla] || 0) + 1;
           }
-          consolidadoRanking[t].total++;
-          consolidadoRanking[t].detalheUfs[uf.sigla] = (consolidadoRanking[t].detalheUfs[uf.sigla] || 0) + 1;
         });
       });
 
-      document.getElementById("modal-logistica-titulo").innerText = "RANKING DE DIRECIONAMENTO: PENDÊNCIAS GLOBAIS DE BACKLOG";
+      document.getElementById("modal-logistica-titulo").innerText = "RANKING EXECUTIVO: PARTICIPACAO NO GARGALO DO BACKLOG NACIONAL";
       const caixaConteudo = document.getElementById("modal-logistica-conteudo");
 
-      if (totalGeralPresos === 0) {
-        caixaConteudo.innerHTML = "<div style='text-align:center; padding-top:4rem; color:var(--status-green); font-weight:600;'>🚀 Ecossistema Limpo! Nenhuma transportadora com pendência no Backlog brasileiro.</div>";
+      if (totalGeralNoGargalo === 0) {
+        caixaConteudo.innerHTML = "<div style='text-align:center; padding-top:4rem; color:var(--status-green); font-weight:600;'>🚀 Ecossistema Limpo! Nenhuma transportadora com pendência ativa no Backlog.</div>";
         document.getElementById("modal-logistica-detalhe").style.display = "flex";
         return;
       }
@@ -1388,24 +1402,29 @@ function buscarUfPorTexto() {
       }
       arrayOrdenada.sort((a, b) => b.dados.total - a.dados.total);
 
-      // Injeta um painel de share macro no topo do conteúdo do modal
-      let htmlKpisModal = `<div class="modal-kpi-container"><div class="modal-kpi-pill" style="border-left-color: var(--status-red);"><span class="modal-kpi-title">Massa Total Presa</span><span class="modal-kpi-value" style="color:var(--status-red);">${totalGeralPresos} Romaneios</span></div></div>`;
+      // Injeta a pílula de volumetria macro unificada no topo do modal
+      let htmlKpisModal = `<div class="modal-kpi-container">
+                            <div class="modal-kpi-pill" style="border-left-color: var(--status-red);">
+                              <span class="modal-kpi-title">Massa Crítica de Backlog</span>
+                              <span class="modal-kpi-value" style="color:var(--status-red);">${totalGeralNoGargalo} Romaneios Retidos</span>
+                            </div>
+                          </div>`;
 
       let tabelaHtml = htmlKpisModal + "<table style='width:100%; border-collapse:collapse; font-size:0.82rem; text-align:left;'>" +
                           "<thead>" +
                             "<tr style='border-bottom:2px solid rgba(0,0,0,0.08); color:var(--status-red); font-weight:700;'> " +
-                              "<th style='padding:0.6rem 0.4rem;'>🚛 TRANSPORTADORA VILÃ</th>" +
-                              "<th style='padding:0.6rem 0.4rem; text-align:center;'>📦 VOL. TOTAL PRESO</th>" +
-                              "<th style='padding:0.6rem 0.4rem; text-align:center;'>📊 SHARE DE IMPACTO</th>" +
-                              "<th style='padding:0.6rem 0.4rem;'>🗺️ DESTRIBUÇÃO POR ESTADO (UF / ROMANEIOS)</th>" +
+                              "<th style='padding:0.6rem 0.4rem;'>🚛 TRANSPORTADORA</th>" +
+                              "<th style='padding:0.6rem 0.4rem; text-align:center;'>📦 TOTAL DE ROMANEIOS</th>" +
+                              "<th style='padding:0.6rem 0.4rem; text-align:center;'>📊 SHARE DE PARTICIPAÇÃO</th>" +
+                              "<th style='padding:0.6rem 0.4rem;'>🗺️ IMPACTO GEOGRÁFICO DISTRIBUÍDO (UF / RECORRÊNCIAS)</th>" +
                             "</tr>" +
                           "</thead>" +
                           "<tbody>";
 
       arrayOrdenada.forEach(item => {
-        let pctShare = Math.round((item.dados.total / totalGeralPresos) * 100);
+        let pctShare = Math.round((item.dados.total / totalGeralNoGargalo) * 100);
         
-        // Monta as strings de texto estilizadas com o fatiamento por estado (Ex: SP: 12 | PR: 4)
+        // Monta o mapa de tags estilizadas contendo o fatiamento por estado (Ex: SP: 12 | RS: 4)
         let stringUfsSegmentadas = [];
         for (let estado in item.dados.detalheUfs) {
           stringUfsSegmentadas.push(`<span style="background:var(--bg-global); padding:0.15rem 0.4rem; border-radius:4px; font-weight:600; margin-right:0.3rem; display:inline-block; font-size:0.75rem;">${estado}: <span style="color:var(--purple-neon);">${item.dados.detalheUfs[estado]}</span></span>`);
@@ -1423,7 +1442,6 @@ function buscarUfPorTexto() {
       caixaConteudo.innerHTML = tabelaHtml;
       document.getElementById("modal-logistica-detalhe").style.display = "flex";
     }
-
     
   </script>
 </body>
