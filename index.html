@@ -1185,7 +1185,7 @@ function buscarUfPorTexto() {
         const da = uf.detalhes_analiticos || {};
         const backlogUf = da.backlog || { concluidos: [], parciais: [], pendentes: [] };
         
-        // 🎯 CRITÉRIO CALIBRADO: Une estritamente os baldes de PARCIAIS e PENDENTES (O atraso real)
+        // 🎯 CRITÉRIO PURIFICADO: Une estritamente os baldes de PARCIAIS e PENDENTES (O atraso real)
         const frotasGargaloBacklog = [...backlogUf.parciais, ...backlogUf.pendentes];
 
         frotasGargaloBacklog.forEach(c => {
@@ -1221,8 +1221,9 @@ function buscarUfPorTexto() {
         }
       }
 
+      // 🎯 CORREÇÃO CIRÚRGICA: Nomes de variáveis unificados e síncronos na RAM
       if (totalGeralRomaneiosNoGargalo > 0 && maiorVolumePreso > 0) {
-        percentualDeCulpa = Math.round((maiorVolumePreso / totalGeralRomaneiosPresosBacklog) * 100);
+        percentualDeCulpa = Math.round((maiorVolumePreso / totalGeralRomaneiosNoGargalo) * 100);
       }
 
       // Estampa os dados macro fixos direto no novo quinto card do topo
@@ -1242,6 +1243,7 @@ function buscarUfPorTexto() {
         }
       }
     }
+
 
 
 
