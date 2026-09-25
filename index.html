@@ -686,19 +686,16 @@
     // 🚀 ENGINE ANALÍTICA SURGICAL: Concatenação pura estável, livre de erros de aspas/crases
     // 🚀 ENGINE ANALÍTICA COMPLETA: Inclui fatiamento de Dispatch % e o Monitor de 10M de Células blindado
     // 🚀 ENGINE ANALÍTICA REVISADA: Estrutura tripartite completa (Backlog, Dia e Estrutura) integrada
+    // 🚀 ENGINE RECALIBRADA PARTE 1: Equações em RAM e Algoritmo Tripartite de Cores
     function renderizarCards(listaUfs) {
       const grid = document.getElementById("grid-estados-uf");
       grid.innerHTML = "";
       
       listaUfs.forEach((uf, index) => {
-        const corClasse = uf.criticos > 0 ? 'bg-red' : (uf.orfas > 0 || uf.faltantes > 0 ? 'bg-yellow' : 'bg-green');
         const dataFormatadaPronta = formatarDataBR(uf.atualizado_em);
-        
         const da = uf.detalhes_analiticos || { dia: { concluidos: [], parciais: [], pendentes: [] }, backlog: { concluidos: [], parciais: [], pendentes: [] }, celulas_conf_total: 0 };
         
-        // =========================================================================
-        // 📊 EQUAÇÕES MATEMÁTICAS EM RAM: OPERAÇÃO DO DIA
-        // =========================================================================
+        // 📊 OPERAÇÃO DO DIA
         const totalDia = da.dia.concluidos.length + da.dia.parciais.length + da.dia.pendentes.length;
         const pConcluidosDia = totalDia > 0 ? Math.round((da.dia.concluidos.length / totalDia) * 100) : 0;
         const pParciaisDia   = totalDia > 0 ? Math.round((da.dia.parciais.length / totalDia) * 100) : 0;
@@ -707,9 +704,7 @@
         const qPresosDia = [...da.dia.concluidos, ...da.dia.parciais, ...da.dia.pendentes].filter(c => !c.dispatch || c.dispatch === "Aguardando" || c.dispatch.toString().trim() === "").length;
         const pDispatchedDia = totalDia > 0 ? Math.round(((totalDia - qPresosDia) / totalDia) * 100) : 0;
 
-        // =========================================================================
-        // 📊 EQUAÇÕES MATEMÁTICAS EM RAM: OPERAÇÃO DO BACKLOG
-        // =========================================================================
+        // 📊 OPERAÇÃO DO BACKLOG
         const totalBacklog = da.backlog.concluidos.length + da.backlog.parciais.length + da.backlog.pendentes.length;
         const pParciaisBacklog   = totalBacklog > 0 ? Math.round((da.backlog.parciais.length / totalBacklog) * 100) : 0;
         const pPendentesBacklog  = totalBacklog > 0 ? Math.round((da.backlog.pendentes.length / totalBacklog) * 100) : 0;
@@ -717,9 +712,7 @@
         const qPresosBacklog = [...da.backlog.concluidos, ...da.backlog.parciais, ...da.backlog.pendentes].filter(c => !c.dispatch || c.dispatch === "Aguardando" || c.dispatch.toString().trim() === "").length;
         const pDispatchedBacklog = totalBacklog > 0 ? Math.round(((totalBacklog - qPresosBacklog) / totalBacklog) * 100) : 0;
 
-        // =========================================================================
         // 🏗️ MONITOR DE CAPACIDADE CELULAR ISOLADO (TETO 10 MILHÕES)
-        // =========================================================================
         const totalCelulas = da.celulas_conf_total || 0;
         const pConsumo = Math.min(Math.round((totalCelulas / 10000000) * 100), 100);
         
@@ -743,7 +736,26 @@
                                '</div>';
 
         // =========================================================================
-        // 📥 CONCATENAÇÃO STRÍNGEA COMPLETA E UNIFICADA
+        // 🎯 ALGORITMO CROMÁTICO EM CASCATA REVISADO (REGRAS EXECUTIVAS)
+        // =========================================================================
+        let corClasse = 'bg-green'; // Fallback padrão: Conformidade total
+
+        // 🟡 TESTE 1: Concentração de faturamento do DIA (Sinal Amarelo de Operação em Andamento)
+        if (da.dia.parciais.length > 0 || da.dia.pendentes.length > 0) {
+          corClasse = 'bg-yellow';
+        }
+
+        // 🔴 TESTE 2: Critério de Gravidade Máxima (Sobrepõe e força o Vermelho se houver gargalo de processo)
+        if (
+          da.backlog.parciais.length > 0 || da.backlog.pendentes.length > 0 || qPresosBacklog > 0 || 
+          qPresosDia > 0 ||                                                                          
+          (parseInt(uf.orfas) || 0) > 0 || (parseInt(uf.faltantes) || 0) > 0 ||                     
+          (da.falhas_contingencia_lista || []).length > 0 || (da.falhas_limpeza_lista || []).length > 0  
+        ) {
+          corClasse = 'bg-red';
+        }
+        // =========================================================================
+        // 📥 CONCATENAÇÃO STRÍNGEA COMPLETA E UNIFICADA (PARTE 2)
         // =========================================================================
         const corContadorBacklog = qPresosBacklog > 0 ? 'color: var(--status-red); font-weight: 800;' : 'color: var(--text-muted);';
         const corContadorDia = qPresosDia > 0 ? 'color: var(--status-red); font-weight: 800;' : 'color: var(--text-muted);';
@@ -781,11 +793,10 @@
               '</div>' +
             '</div>' +
 
-            /* 🏗️ COPIE E SUBSTITUA APENAS O QUADRANTE 3 DENTRO DO SEU let cardHtml GERAL */
+            /* 🏗️ QUADRANTE 3: ESTRUTURA CONTROLE */
             '<div class="diagnostic-box" style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid rgba(0,0,0,0.03);">' +
               '<div style="font-weight:700; font-size:0.85rem; margin-bottom:0.4rem; color:var(--text-muted);">🏗️ ESTRUTURA</div>' +
               
-              /* 🔗 LINKS DIRETOS CONECTADOS À EXTRATORA DE HISTÓRICO EM RAM */
               '<div class="diagnostic-item"><span>Abas Ativas:</span><a href="#" class="sheet-link" onclick="abrirJanelaEstruturaDetalhe(\'' + uf.sigla + '\', \'abas_ativas_lista\', \'ABAS ATIVAS NO ARQUIVO\'); return false;" style="color:var(--text-main); font-weight: 600;">' + uf.abas_existentes + '</a></div>' +
               '<div class="diagnostic-item"><span>Abas Órfãs Locais:</span><a href="#" class="sheet-link" onclick="abrirJanelaEstruturaDetalhe(\'' + uf.sigla + '\', \'abas_orfas_lista\', \'ABAS ÓRFÃS LOCAIS DETECTADAS\'); return false;" style="' + (uf.orfas > 0 ? 'color: #D32F2F; font-weight: 700;' : 'color: var(--text-muted); font-weight: 500;') + '">' + uf.orfas + '</a></div>' +
               '<div class="diagnostic-item"><span>Faltantes Master:</span><a href="#" class="sheet-link" onclick="abrirJanelaEstruturaDetalhe(\'' + uf.sigla + '\', \'faltantes_master_lista\', \'ROMANEIOS FALTANTES NA MASTER\'); return false;" style="' + (uf.faltantes > 0 ? 'color: #E65100; font-weight: 700;' : 'color: var(--text-muted); font-weight: 500;') + '">' + uf.faltantes + '</a></div>' +
@@ -808,6 +819,7 @@
         grid.innerHTML += cardHtml;
       });
     }
+
 
 
 
