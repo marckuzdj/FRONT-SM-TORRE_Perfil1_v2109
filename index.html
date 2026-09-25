@@ -401,23 +401,18 @@
     </div>
 
     
-    <!-- KPI ROW METRICS -->
-    <div class="kpi-row">
-      <div class="kpi-card">
-        <p>Regionais Ativas</p>
-        <h2 id="kpi-total-sheets">54</h2>
-      </div>
-      <div class="kpi-card">
-        <p>Abas Órfãs Locais</p>
-        <h2 id="kpi-total-resgatadas" style="color: var(--purple-neon);">0</h2>
-      </div>
-      <div class="kpi-card">
-        <p>Faltantes na Master</p>
-        <h2 id="kpi-total-faltantes" style="color: #F57C00;">0</h2>
-      </div>
-      <div class="kpi-card">
-        <p>Alertas Críticos</p>
-        <h2 id="kpi-total-criticos" style="color: var(--status-red);">0</h2>
+    <!-- 📊 REVISÃO OPERACIONAL: Painel de Controle Expandido para 5 KPIs Globais -->
+    <div class="kpi-row" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5rem; margin-bottom: 2.5rem;">
+      <div class="kpi-card"><p>Regionais Ativas</p><h2 id="kpi-total-sheets">54</h2></div>
+      <div class="kpi-card"><p>Abas Órfãs Locais</p><h2 id="kpi-total-resgatadas" style="color: var(--purple-neon);">0</h2></div>
+      <div class="kpi-card"><p>Faltantes na Master</p><h2 id="kpi-total-faltantes" style="color: #F57C00;">0</h2></div>
+      <div class="kpi-card"><p>Alertas Críticos</p><h2 id="kpi-total-criticos" style="color: var(--status-red);">0</h2></div>
+      
+      <!-- 🎯 NOVO KPI FIXO DE INTELIGÊNCIA EXECUTIVA (CLICÁVEL) -->
+      <div class="kpi-card" id="card-transp-critica" onclick="abrirModalRankingTranspBacklog()" style="cursor: pointer; border: 1px solid rgba(255, 23, 68, 0.15); transition: all 0.2s ease;">
+        <p style="color: var(--status-red); font-weight: 700;">🚛 Transportadora Crítica (Backlog)</p>
+        <h2 id="kpi-transp-nome" style="font-size: 1.2rem; font-weight: 700; margin-top: 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main);">Analisando...</h2>
+        <div id="kpi-transp-metrica" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-top: 0.2rem;">0 Rom. (0%)</div>
       </div>
     </div>
 
@@ -1173,12 +1168,30 @@ function buscarUfPorTexto() {
       let somaOrfas = 0;
       let somaFaltantes = 0;
       let somaCriticos = 0;
+      
+      // 📊 DICIONÁRIO EM RAM: Consolida o gargalo das transportadoras no Backlog nacional
+      let mapaGargaloTransp = {};
+      let totalGeralRomaneiosPresosBacklog = 0;
 
       listaUfs.forEach(uf => {
         // Puxa as propriedades exatas mapeadas pelo JSON do doGet
         somaOrfas += parseInt(uf.orfas) || 0;
         somaFaltantes += parseInt(uf.faltantes) || 0;
         somaCriticos += parseInt(uf.criticos) || 0;
+
+        // Puxa estritamente os romaneios pendentes do balde do BACKLOG de cada UF
+        const da = uf.detalhes_analiticos || {};
+        const backlogUf = da.backlog || { concluidos: [], parciais: [], pendentes: [] };
+        const todosBacklog = [...backlogUf.concluidos, ...backlogUf.parciais, ...backlogUf.pendentes];
+        
+        // Filtra quem está preso na doca (dispatch vazio ou Aguardando)
+        const presosBacklog = todosBacklog.filter(c => !c.dispatch || c.dispatch === "Aguardando" || c.dispatch.toString().trim() === "");
+
+        presosBacklog.forEach(c => {
+          let nomeTransp = c.transp || "Não Informada";
+          mapaGargaloTransp[nomeTransp] = (mapaGargaloTransp[nomeTransp] || 0) + 1;
+          totalGeralRomaneiosPresosBacklog++;
+        });
       });
 
       // Injeta fisicamente os totais acumulados nas caixas de vidro do topo
@@ -1186,7 +1199,41 @@ function buscarUfPorTexto() {
       document.getElementById("kpi-total-resgatadas").innerText = somaOrfas;
       document.getElementById("kpi-total-faltantes").innerText = somaFaltantes;
       document.getElementById("kpi-total-criticos").innerText = somaCriticos;
+
+      // 🏆 CORRIDA DOS DADOS: Eleger a transportadora com maior número de travamentos
+      let transportadoraVilã = "Nenhuma / 100% OK";
+      let maiorVolumePreso = 0;
+      let percentualDeCulpa = 0;
+
+      for (let t in mapaGargaloTransp) {
+        if (mapaGargaloTransp[t] > maiorVolumePreso) {
+          maiorVolumePreso = mapaGargaloTransp[t];
+          transportadoraVilã = t;
+        }
+      }
+
+      if (totalGeralRomaneiosPresosBacklog > 0 && maiorVolumePreso > 0) {
+        percentualDeCulpa = Math.round((maiorVolumePreso / totalGeralRomaneiosPresosBacklog) * 100);
+      }
+
+      // Estampa os dados macro fixos direto no novo quinto card do topo
+      const elementoNome = document.getElementById("kpi-transp-nome");
+      const elementoMetrica = document.getElementById("kpi-transp-metrica");
+      const card = document.getElementById("card-transp-critica");
+
+      if (card && elementoNome && elementoMetrica) {
+        if (maiorVolumePreso > 0) {
+          elementoNome.innerText = transportadoraVilã.toUpperCase();
+          elementoMetrica.innerHTML = `<span style="color:var(--status-red); font-weight:700;">${maiorVolumePreso} Rom.</span> <span style="color:var(--text-muted); font-weight:400; margin:0 0.15rem;">/</span> ${percentualDeCulpa}% do total preso`;
+          card.style.background = "rgba(255, 23, 68, 0.02)";
+        } else {
+          elementoNome.innerText = "100% DESPACHADO";
+          elementoMetrica.innerText = "Zero pendências";
+          card.style.background = "var(--bg-card)";
+        }
+      }
     }
+
 
     // =========================================================================
     // 📊 ENGINE UNIVERSAL DE EXPORTAÇÃO PARA CSV (EXCEL WHITE MODE PRO)
@@ -1285,6 +1332,83 @@ function buscarUfPorTexto() {
         tabelaHtml += "</tbody></table>";
         caixaConteudo.innerHTML = tabelaHtml;
       }
+      document.getElementById("modal-logistica-detalhe").style.display = "flex";
+    }
+
+        // 🎯 RELATÓRIO EXECUTIVO GLOBAL: Consolida o ranking completo de gargalos do Backlog nacional
+    function abrirModalRankingTranspBacklog() {
+      if (!cacheDadosEcosistema || cacheDadosEcosistema.length === 0) return;
+
+      let consolidadoRanking = {};
+      let totalGeralPresos = 0;
+
+      // Fase 1: Agrupa dados destrinchados por Transportadora + UF
+      cacheDadosEcosistema.forEach(uf => {
+        const da = uf.detalhes_analiticos || {};
+        const backlog = da.backlog || { concluidos: [], parciais: [], pendentes: [] };
+        const presos = [...backlog.concluidos, ...backlog.parciais, ...backlog.pendentes].filter(c => !c.dispatch || c.dispatch === "Aguardando" || c.dispatch.toString().trim() === "");
+
+        presos.forEach(c => {
+          let t = c.transp || "Não Informada";
+          totalGeralPresos++;
+
+          if (!consolidadoRanking[t]) {
+            consolidadoRanking[t] = { total: 0, detalheUfs: {} };
+          }
+          consolidadoRanking[t].total++;
+          consolidadoRanking[t].detalheUfs[uf.sigla] = (consolidadoRanking[t].detalheUfs[uf.sigla] || 0) + 1;
+        });
+      });
+
+      document.getElementById("modal-logistica-titulo").innerText = "RANKING DE DIRECIONAMENTO: PENDÊNCIAS GLOBAIS DE BACKLOG";
+      const caixaConteudo = document.getElementById("modal-logistica-conteudo");
+
+      if (totalGeralPresos === 0) {
+        caixaConteudo.innerHTML = "<div style='text-align:center; padding-top:4rem; color:var(--status-green); font-weight:600;'>🚀 Ecossistema Limpo! Nenhuma transportadora com pendência no Backlog brasileiro.</div>";
+        document.getElementById("modal-logistica-detalhe").style.display = "flex";
+        return;
+      }
+
+      // Converte o objeto para array e ordena do maior gargalo para o menor
+      let arrayOrdenada = [];
+      for (let t in consolidadoRanking) {
+        arrayOrdenada.push({ nome: t, dados: consolidadoRanking[t] });
+      }
+      arrayOrdenada.sort((a, b) => b.dados.total - a.dados.total);
+
+      // Injeta um painel de share macro no topo do conteúdo do modal
+      let htmlKpisModal = `<div class="modal-kpi-container"><div class="modal-kpi-pill" style="border-left-color: var(--status-red);"><span class="modal-kpi-title">Massa Total Presa</span><span class="modal-kpi-value" style="color:var(--status-red);">${totalGeralPresos} Romaneios</span></div></div>`;
+
+      let tabelaHtml = htmlKpisModal + "<table style='width:100%; border-collapse:collapse; font-size:0.82rem; text-align:left;'>" +
+                          "<thead>" +
+                            "<tr style='border-bottom:2px solid rgba(0,0,0,0.08); color:var(--status-red); font-weight:700;'> " +
+                              "<th style='padding:0.6rem 0.4rem;'>🚛 TRANSPORTADORA VILÃ</th>" +
+                              "<th style='padding:0.6rem 0.4rem; text-align:center;'>📦 VOL. TOTAL PRESO</th>" +
+                              "<th style='padding:0.6rem 0.4rem; text-align:center;'>📊 SHARE DE IMPACTO</th>" +
+                              "<th style='padding:0.6rem 0.4rem;'>🗺️ DESTRIBUÇÃO POR ESTADO (UF / ROMANEIOS)</th>" +
+                            "</tr>" +
+                          "</thead>" +
+                          "<tbody>";
+
+      arrayOrdenada.forEach(item => {
+        let pctShare = Math.round((item.dados.total / totalGeralPresos) * 100);
+        
+        // Monta as strings de texto estilizadas com o fatiamento por estado (Ex: SP: 12 | PR: 4)
+        let stringUfsSegmentadas = [];
+        for (let estado in item.dados.detalheUfs) {
+          stringUfsSegmentadas.push(`<span style="background:var(--bg-global); padding:0.15rem 0.4rem; border-radius:4px; font-weight:600; margin-right:0.3rem; display:inline-block; font-size:0.75rem;">${estado}: <span style="color:var(--purple-neon);">${item.dados.detalheUfs[estado]}</span></span>`);
+        }
+
+        tabelaHtml += `<tr style="border-bottom:1px solid rgba(0,0,0,0.04); font-weight:500; vertical-align:top;">
+                         <td style="padding:0.75rem 0.4rem; font-weight:700; color:var(--text-main);">${item.nome.toUpperCase()}</td>
+                         <td style="padding:0.75rem 0.4rem; text-align:center; font-weight:700; color:var(--status-red); font-size:0.9rem;">${item.dados.total}</td>
+                         <td style="padding:0.75rem 0.4rem; text-align:center; font-weight:700; color:var(--text-muted);">${pctShare}%</td>
+                         <td style="padding:0.75rem 0.4rem; line-height:1.6;">${stringUfsSegmentadas.join("")}</td>
+                       </tr>`;
+      });
+
+      tabelaHtml += "</tbody></table>";
+      caixaConteudo.innerHTML = tabelaHtml;
       document.getElementById("modal-logistica-detalhe").style.display = "flex";
     }
 
