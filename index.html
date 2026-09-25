@@ -1169,9 +1169,12 @@ function buscarUfPorTexto() {
       let somaFaltantes = 0;
       let somaCriticos = 0;
       
-      // 📊 DICIONÁRIO EM RAM: Consolida o gargalo das transportadoras no Backlog nacional
+      // 📊 TELEMETRIA DE GARGALO REAL: Mapeia o share de transportadoras no Backlog Crítico
       let mapaGargaloTransp = {};
-      let totalGeralRomaneiosPresosBacklog = 0;
+      let totalGeralRomaneiosNoGargalo = 0;
+      
+      // Set global de segurança para blindar a unicidade física dos Romaneios em RAM
+      let romaneiosProcessadosSet = new Set();
 
       listaUfs.forEach(uf => {
         // Puxa as propriedades exatas mapeadas pelo JSON do doGet
@@ -1179,18 +1182,24 @@ function buscarUfPorTexto() {
         somaFaltantes += parseInt(uf.faltantes) || 0;
         somaCriticos += parseInt(uf.criticos) || 0;
 
-        // Puxa estritamente os romaneios pendentes do balde do BACKLOG de cada UF
         const da = uf.detalhes_analiticos || {};
         const backlogUf = da.backlog || { concluidos: [], parciais: [], pendentes: [] };
-        const todosBacklog = [...backlogUf.concluidos, ...backlogUf.parciais, ...backlogUf.pendentes];
         
-        // Filtra quem está preso na doca (dispatch vazio ou Aguardando)
-        const presosBacklog = todosBacklog.filter(c => !c.dispatch || c.dispatch === "Aguardando" || c.dispatch.toString().trim() === "");
+        // 🎯 CRITÉRIO CALIBRADO: Une estritamente os baldes de PARCIAIS e PENDENTES (O atraso real)
+        const frotasGargaloBacklog = [...backlogUf.parciais, ...backlogUf.pendentes];
 
-        presosBacklog.forEach(c => {
-          let nomeTransp = c.transp || "Não Informada";
-          mapaGargaloTransp[nomeTransp] = (mapaGargaloTransp[nomeTransp] || 0) + 1;
-          totalGeralRomaneiosPresosBacklog++;
+        frotasGargaloBacklog.forEach(c => {
+          let idRom = c.romaneio ? c.romaneio.toString().trim().toUpperCase() : "";
+          if (!idRom) return;
+
+          // Garante que o romaneio seja único no cálculo geral do ecossistema
+          if (!romaneiosProcessadosSet.has(idRom)) {
+            romaneiosProcessadosSet.add(idRom);
+            
+            let nomeTransp = c.transp || "Não Informada";
+            mapaGargaloTransp[nomeTransp] = (mapaGargaloTransp[nomeTransp] || 0) + 1;
+            totalGeralRomaneiosNoGargalo++;
+          }
         });
       });
 
@@ -1200,7 +1209,7 @@ function buscarUfPorTexto() {
       document.getElementById("kpi-total-faltantes").innerText = somaFaltantes;
       document.getElementById("kpi-total-criticos").innerText = somaCriticos;
 
-      // 🏆 CORRIDA DOS DADOS: Eleger a transportadora com maior número de travamentos
+      // 🏆 CORRIDA DOS DADOS: Eleger a transportadora com maior número de travamentos reais
       let transportadoraVilã = "Nenhuma / 100% OK";
       let maiorVolumePreso = 0;
       let percentualDeCulpa = 0;
@@ -1212,7 +1221,7 @@ function buscarUfPorTexto() {
         }
       }
 
-      if (totalGeralRomaneiosPresosBacklog > 0 && maiorVolumePreso > 0) {
+      if (totalGeralRomaneiosNoGargalo > 0 && maiorVolumePreso > 0) {
         percentualDeCulpa = Math.round((maiorVolumePreso / totalGeralRomaneiosPresosBacklog) * 100);
       }
 
@@ -1224,15 +1233,16 @@ function buscarUfPorTexto() {
       if (card && elementoNome && elementoMetrica) {
         if (maiorVolumePreso > 0) {
           elementoNome.innerText = transportadoraVilã.toUpperCase();
-          elementoMetrica.innerHTML = `<span style="color:var(--status-red); font-weight:700;">${maiorVolumePreso} Rom.</span> <span style="color:var(--text-muted); font-weight:400; margin:0 0.15rem;">/</span> ${percentualDeCulpa}% do total preso`;
+          elementoMetrica.innerHTML = `<span style="color:var(--status-red); font-weight:700;">${maiorVolumePreso} Rom.</span> <span style="color:var(--text-muted); font-weight:400; margin:0 0.15rem;">/</span> ${percentualDeCulpa}% do total retido`;
           card.style.background = "rgba(255, 23, 68, 0.02)";
         } else {
-          elementoNome.innerText = "100% DESPACHADO";
+          elementoNome.innerText = "100% OPERACIONAL";
           elementoMetrica.innerText = "Zero pendências";
           card.style.background = "var(--bg-card)";
         }
       }
     }
+
 
 
     // =========================================================================
